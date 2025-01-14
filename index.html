@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>中国象棋 - 双人对弈</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>中国象棋 - 双人对弈</h1>
+      <div class="game-info">
+        <div class="player-info">
+          <div class="player black">黑方</div>
+          <div class="player red active">红方</div>
+        </div>
+        <div class="status">轮到红方走棋</div>
+      </div>
+      <canvas id="chessboard" width="580" height="640"></canvas>
+      <div class="controls">
+        <button id="newGame">新游戏</button>
+        <button id="undoMove">悔棋</button>
+      </div>
+    </div>
+    <script src="js/piece.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

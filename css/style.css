@@ -1,0 +1,77 @@
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Microsoft YaHei', sans-serif;
+    background-color: #f0f0f0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.game-info {
+    margin: 20px auto;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.player-info {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+}
+
+.player {
+    padding: 8px 16px;
+    border-radius: 4px;
+    opacity: 0.7;
+}
+
+.player.active {
+    opacity: 1;
+    font-weight: bold;
+    background-color: #e8e8e8;
+}
+
+.player.red {
+    color: #c00;
+}
+
+.player.black {
+    color: #000;
+}
+
+.status {
+    font-size: 18px;
+    color: #333;
+}
+
+canvas {
+    background-color: #ffedcc;
+    border: 2px solid #8b4513;
+    margin: 20px auto;
+    display: block;
+}
+
+.controls {
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #8b4513;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+button:hover {
+    background-color: #a0522d;
+} 
