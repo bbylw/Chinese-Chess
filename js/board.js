@@ -23,9 +23,24 @@ class Board {
         this.captureSound = new Audio('sounds/capture.mp3');
         this.checkSound = new Audio('sounds/check.mp3');
         
+        // 预加载音效
+        this.moveSound.load();
+        this.captureSound.load();
+        this.checkSound.load();
+        
+        // 添加音效播放错误处理
+        const handleAudioError = (error) => {
+            console.warn('音效加载失败:', error);
+        };
+        this.moveSound.addEventListener('error', handleAudioError);
+        this.captureSound.addEventListener('error', handleAudioError);
+        this.checkSound.addEventListener('error', handleAudioError);
+        
         this.initBoard();
         this.bindEvents();
         this.updateStatus();
+        this.touchStartX = null;
+        this.touchStartY = null;
     }
 
     // 初始化棋盘
@@ -207,7 +222,22 @@ class Board {
 
     // 绑定事件
     bindEvents() {
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        this.canvas.addEventListener('click', this.handleClick.bind(this));
+        
+        // 添加触摸事件支持
+        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
+        this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
+        this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
+        
+        // 阻止默认的触摸行为
+        this.canvas.addEventListener('touchstart', (e) => e.preventDefault());
+        
+        // 添加认输按钮事件
+        document.getElementById('surrender').addEventListener('click', () => {
+            if (!this.gameOver && confirm('确定要认输吗？')) {
+                this.handleSurrender();
+            }
+        });
     }
 
     // 处理点击事件
@@ -609,9 +639,20 @@ class Board {
 
         const lastMove = this.moveHistory.pop();
         
-        // 添加：恢复游戏状态
+        // 如果是认输，恢复游戏状态
+        if (lastMove.type === 'surrender') {
+            this.gameOver = false;
+            this.winner = null;
+            this.currentPlayer = lastMove.player;
+            this.drawBoard();
+            this.updateStatus();
+            return;
+        }
+        
+        // 恢复游戏状态
         this.gameOver = false;
         this.winner = null;
+        this.selectedPiece = null;  // 清除选中状态
         
         // 恢复棋子位置
         lastMove.piece.x = lastMove.fromX;
@@ -632,10 +673,15 @@ class Board {
 
         // 切换当前玩家
         this.currentPlayer = this.currentPlayer === 'red' ? 'black' : 'red';
-        this.selectedPiece = null;
         this.isCheck = false;
         
-        // 修改：重新检查将军状态
+        // 清除触摸状态
+        this.touchStartX = null;
+        this.touchStartY = null;
+        this.lastPreviewX = null;
+        this.lastPreviewY = null;
+        
+        // 重新检查将军状态
         this.checkForCheck();
         this.drawBoard();
         this.updateStatus();
@@ -652,7 +698,13 @@ class Board {
             redPlayer.classList.remove('active');
             blackPlayer.classList.remove('active');
             const winnerText = this.winner === 'red' ? '红方' : '黑方';
-            statusElement.textContent = `游戏结束，${winnerText}胜利！`;
+            // 区分认输和其他获胜方式
+            const lastMove = this.moveHistory[this.moveHistory.length - 1];
+            if (lastMove && lastMove.type === 'surrender') {
+                statusElement.textContent = `${this.winner === 'red' ? '黑方' : '红方'}认输，${winnerText}胜利！`;
+            } else {
+                statusElement.textContent = `游戏结束，${winnerText}胜利！`;
+            }
             setTimeout(() => alert(`${winnerText}胜利！`), 100);
         } else {
             redPlayer.classList.toggle('active', this.currentPlayer === 'red');
@@ -680,5 +732,116 @@ class Board {
                 }
             }
         }
+    }
+
+    // 处理触摸开始事件
+    handleTouchStart(e) {
+        if (this.gameOver) return;
+
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        this.touchStartX = Math.round((touch.clientX - rect.left - this.padding) / this.gridSize);
+        this.touchStartY = Math.round((touch.clientY - rect.top - this.padding) / this.gridSize);
+        
+        // 检查是否点击了棋子
+        const piece = this.pieces.find(p => p.x === this.touchStartX && p.y === this.touchStartY);
+        if (piece && piece.color === this.currentPlayer) {
+            this.selectedPiece = piece;
+            this.drawBoard();
+            this.drawPossibleMoves(piece);
+        }
+    }
+
+    // 处理触摸移动事件
+    handleTouchMove(e) {
+        if (this.selectedPiece) {
+            // 添加节流，避免过于频繁的重绘
+            if (this.touchMoveThrottle) return;
+            this.touchMoveThrottle = true;
+            setTimeout(() => this.touchMoveThrottle = false, 30);
+            
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const x = Math.round((touch.clientX - rect.left - this.padding) / this.gridSize);
+            const y = Math.round((touch.clientY - rect.top - this.padding) / this.gridSize);
+            
+            // 检查坐标是否改变
+            if (x === this.lastPreviewX && y === this.lastPreviewY) return;
+            this.lastPreviewX = x;
+            this.lastPreviewY = y;
+            
+            // 显示移动预览
+            this.drawBoard();
+            this.drawMovePreview(this.selectedPiece, x, y);
+        }
+    }
+
+    // 处理触摸结束事件
+    handleTouchEnd(e) {
+        if (this.selectedPiece) {
+            const touch = e.changedTouches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const x = Math.round((touch.clientX - rect.left - this.padding) / this.gridSize);
+            const y = Math.round((touch.clientY - rect.top - this.padding) / this.gridSize);
+            
+            // 尝试移动棋子
+            if (this.isValidMove(this.selectedPiece, x, y)) {
+                this.movePiece(this.selectedPiece, x, y);
+                this.selectedPiece = null;
+                if (!this.gameOver) {
+                    this.currentPlayer = this.currentPlayer === 'red' ? 'black' : 'red';
+                }
+            }
+            
+            this.drawBoard();
+            this.updateStatus();
+        }
+    }
+
+    // 绘制移动预览
+    drawMovePreview(piece, x, y) {
+        if (this.isValidMove(piece, x, y)) {
+            const ctx = this.ctx;
+            const toX = this.padding + x * this.gridSize;
+            const toY = this.padding + y * this.gridSize;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.arc(toX, toY, this.pieceRadius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+
+    // 安全的音效播放方法
+    playSound(sound) {
+        try {
+            sound.currentTime = 0;  // 重置音效
+            sound.play().catch(error => {
+                console.warn('音效播放失败:', error);
+            });
+        } catch (error) {
+            console.warn('音效播放失败:', error);
+        }
+    }
+
+    // 处理认输
+    handleSurrender() {
+        if (this.gameOver) return;
+        
+        this.gameOver = true;
+        // 当前玩家认输，另一方获胜
+        this.winner = this.currentPlayer === 'red' ? 'black' : 'red';
+        this.currentPlayer = null;
+        this.selectedPiece = null;
+        
+        // 记录认输到移动历史
+        this.moveHistory.push({
+            type: 'surrender',
+            player: this.currentPlayer
+        });
+        
+        this.drawBoard();
+        this.updateStatus();
     }
 } 

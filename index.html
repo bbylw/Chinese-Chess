@@ -2,7 +2,10 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>中国象棋 - 双人对弈</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
@@ -16,10 +19,16 @@
         </div>
         <div class="status">轮到红方走棋</div>
       </div>
-      <canvas id="chessboard" width="580" height="640"></canvas>
+      <canvas
+        id="chessboard"
+        width="580"
+        height="640"
+        touch-action="none"
+      ></canvas>
       <div class="controls">
-        <button id="newGame">新游戏</button>
-        <button id="undoMove">悔棋</button>
+        <button id="newGame" class="control-btn">新游戏</button>
+        <button id="undoMove" class="control-btn">悔棋</button>
+        <button id="surrender" class="control-btn">认输</button>
       </div>
     </div>
     <script src="js/piece.js"></script>
