@@ -7,7 +7,7 @@
 - [GitHub Pages Demo](https://[用户名].github.io/chinese-chess/)
 - [Cloudflare Pages Demo](https://[项目名].pages.dev)
 
-![游戏预览](screenshots/preview.png)
+![游戏预览](https://cdn.jsdelivr.net/gh/pusvsimg/img@main/Image/20250114222513604.png)
 
 ## 功能特点
 
