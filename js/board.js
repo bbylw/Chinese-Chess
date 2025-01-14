@@ -55,6 +55,13 @@ class Board {
         this.selectedPiece = null;
         this.isCheck = false;
         
+        // 清理触摸状态
+        this.touchStartX = null;
+        this.touchStartY = null;
+        this.lastPreviewX = null;
+        this.lastPreviewY = null;
+        this.touchMoveThrottle = false;
+        
         // 初始化布局
         this.initPieces('red');
         this.initPieces('black');
@@ -234,7 +241,10 @@ class Board {
         
         // 添加认输按钮事件
         document.getElementById('surrender').addEventListener('click', () => {
-            if (!this.gameOver && confirm('确定要认输吗？')) {
+            if (this.gameOver) return;
+            
+            const currentPlayerText = this.currentPlayer === 'red' ? '红方' : '黑方';
+            if (confirm(`${currentPlayerText}确定要认输吗？`)) {
                 this.handleSurrender();
             }
         });
@@ -514,16 +524,16 @@ class Board {
         // 检查是否将军
         this.checkForCheck();
 
-        // 播放相应音效
+        // 使用安全的音效播放方法
         if (this.pieces.some(p => p.x === toX && p.y === toY)) {
-            this.captureSound.play();
+            this.playSound(this.captureSound);
         } else {
-            this.moveSound.play();
+            this.playSound(this.moveSound);
         }
-
-        // 如果将军则播放将军音效
+        
+        // 延迟播放将军音效，避免与移动音效重叠
         if (this.isCheck) {
-            this.checkSound.play();
+            setTimeout(() => this.playSound(this.checkSound), 200);
         }
     }
 
@@ -648,6 +658,9 @@ class Board {
             this.updateStatus();
             return;
         }
+        
+        // 播放悔棋音效
+        this.playSound(this.moveSound);
         
         // 恢复游戏状态
         this.gameOver = false;
@@ -829,8 +842,8 @@ class Board {
     handleSurrender() {
         if (this.gameOver) return;
         
+        const surrenderingPlayer = this.currentPlayer;
         this.gameOver = true;
-        // 当前玩家认输，另一方获胜
         this.winner = this.currentPlayer === 'red' ? 'black' : 'red';
         this.currentPlayer = null;
         this.selectedPiece = null;
@@ -838,8 +851,11 @@ class Board {
         // 记录认输到移动历史
         this.moveHistory.push({
             type: 'surrender',
-            player: this.currentPlayer
+            player: surrenderingPlayer
         });
+        
+        // 播放认输音效
+        this.playSound(this.captureSound);
         
         this.drawBoard();
         this.updateStatus();
